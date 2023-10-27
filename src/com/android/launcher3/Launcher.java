@@ -214,6 +214,12 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+// AW:Added for BOOTEVENT
+import java.io.FileOutputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+
+
 /**
  * Default launcher application.
  */
@@ -359,6 +365,31 @@ public class Launcher extends StatefulActivity<LauncherState> implements Launche
     // session on the server side.
     protected InstanceId mAllAppsSessionLogId;
     private LauncherState mPrevLauncherState;
+    // AW:Added for BOOTEVENT
+    private static boolean sBootEventenable = "true".equals(Utilities.getSystemProperty("persist.sys.bootevent", "true"));
+    static void logBootEvent(String bootevent) {
+        if (!sBootEventenable) {
+            return ;
+        }
+        FileOutputStream fos =null;
+        try {
+            fos = new FileOutputStream("/proc/bootevent");
+            fos.write(bootevent.getBytes());
+            fos.flush();
+        } catch (FileNotFoundException e) {
+            Log.e("BOOTEVENT","Failure open /proc/bootevent,not found!",e);
+        } catch (java.io.IOException e) {
+            Log.e("BOOTEVENT","Failure open /proc/bootevent entry",e);
+        } finally {
+            if (fos != null) {
+                try {
+                    fos.close();
+                } catch (IOException e) {
+                    Log.e ("BOOTEVENT","Failure close /proc/bootevent entry",e);
+                }
+            }
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -417,7 +448,10 @@ public class Launcher extends StatefulActivity<LauncherState> implements Launche
             });
         }
 
+        // AW:BOOTEVENT
+        logBootEvent("Launcher:onCreate start");
         super.onCreate(savedInstanceState);
+        Log.i(TAG,"Launcher:onCreate start");
 
         LauncherAppState app = LauncherAppState.getInstance(this);
         mOldConfig = new Configuration(getResources().getConfiguration());
@@ -493,6 +527,8 @@ public class Launcher extends StatefulActivity<LauncherState> implements Launche
                 OverlayPlugin.class, false /* allowedMultiple */);
 
         mRotationHelper.initialize();
+        logBootEvent("Launcher:onCreate end");
+        Log.i(TAG,"Launcher:onCreate end");
         TraceHelper.INSTANCE.endSection(traceToken);
 
         mUserChangedCallbackCloseable = UserCache.INSTANCE.get(this).addUserChangeListener(
@@ -1094,6 +1130,9 @@ public class Launcher extends StatefulActivity<LauncherState> implements Launche
 
     @Override
     protected void onResume() {
+        // AW:BOOTEVENT
+        logBootEvent("Launcher:onResume start");
+        Log.i(TAG,"Launcher:onResume start");
         Object traceToken = TraceHelper.INSTANCE.beginSection(ON_RESUME_EVT,
                 TraceHelper.FLAG_UI_EVENT);
         super.onResume();
@@ -1104,6 +1143,10 @@ public class Launcher extends StatefulActivity<LauncherState> implements Launche
             mOverlayManager.onActivityResumed(this);
         }
 
+        // AW:BOOTEVENT Launcher displayed end,turn off bootevent
+        Log.i(TAG,"Launcher:onResume end");
+        logBootEvent("Launcher:onResume end");
+        logBootEvent("0");
         TraceHelper.INSTANCE.endSection(traceToken);
     }
 

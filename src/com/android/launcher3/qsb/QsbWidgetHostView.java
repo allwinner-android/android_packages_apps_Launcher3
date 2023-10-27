@@ -16,7 +16,11 @@
 
 package com.android.launcher3.qsb;
 
+import android.annotation.Nullable;
+import android.app.ActivityManager;
 import android.content.Context;
+import android.content.pm.PackageManager;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewDebug;
@@ -34,11 +38,52 @@ public class QsbWidgetHostView extends NavigableAppWidgetHostView {
 
     @ViewDebug.ExportedProperty(category = "launcher")
     private int mPreviousOrientation;
+    /// AW：[BugFix] #54936 Solve the problem of high CPU consumption wangchende
+    private final int mBlankImageId;
+
+    private void removeBlankImage() {
+        if (mBlankImageId != 0) {
+            View imageView = findViewById(mBlankImageId);
+            if (imageView != null) {
+                ViewGroup parent = (ViewGroup) imageView.getParent();
+                ((ViewGroup) parent.getParent()).removeView(parent);
+                Log.i("QsbWidgetHostView", "removeView imageView=" + imageView);
+            }
+        }
+    }
+
+    private int getBlankImageId(Context context) {
+        try {
+            if (ActivityManager.isLowRamDeviceStatic()) {
+                Context appContext = context.createPackageContext("com.google.android.apps.searchlite", Context.CONTEXT_IGNORE_SECURITY);
+                return appContext.getResources().getIdentifier("blank_image", "id", "com.google.android.apps.searchlite");
+            }
+        } catch (PackageManager.NameNotFoundException e) {
+            Log.i("QsbWidgetHostView", "NameNotFoundException =", e);
+        }
+        return 0;
+    }
+
+    @Override
+    protected void applyRemoteViews(@Nullable RemoteViews remoteViews, boolean useAsyncIfPossible) {
+        super.applyRemoteViews(remoteViews, useAsyncIfPossible);
+        removeBlankImage();
+    }
+
+    @Override
+    protected void prepareView(View view) {
+        super.prepareView(view);
+        removeBlankImage();
+    }
+    /// AW：add end
 
     public QsbWidgetHostView(Context context) {
         super(context);
         setFocusable(true);
         setBackgroundResource(R.drawable.qsb_host_view_focus_bg);
+        /// AW：[BugFix] #54936 Solve the problem of high CPU consumption wangchende
+        mBlankImageId = getBlankImageId(context);
+        /// AW：add end
     }
 
     @Override

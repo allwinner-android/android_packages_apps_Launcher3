@@ -313,7 +313,9 @@ class OrientationTouchTransformer {
     private void updateAssistantRegions(OrientationRectF orientationRectF) {
         int navbarHeight = getNavbarSize(ResourceUtils.NAVBAR_BOTTOM_GESTURE_SIZE);
         int assistantWidth = mResources.getDimensionPixelSize(R.dimen.gestures_assistant_width);
-        float assistantHeight = Math.max(navbarHeight, mContractInfo.getWindowCornerRadius());
+        // AW_CODE: add assistantHeight factor
+        int ahFactor = mResources.getInteger(R.integer.assistant_height_factor);
+        float assistantHeight = Math.max(navbarHeight, mContractInfo.getWindowCornerRadius()) * ahFactor;
         mAssistantLeftRegion.bottom = mAssistantRightRegion.bottom = orientationRectF.bottom;
         mAssistantLeftRegion.top = mAssistantRightRegion.top =
                 orientationRectF.bottom - assistantHeight;
